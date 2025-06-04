@@ -3,6 +3,7 @@
 import { FcGoogle } from "react-icons/fc";
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation"; // Added
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
@@ -37,12 +38,13 @@ const Signup1 = ({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const router = useRouter(); // Added
 
   const { mutate, error } = api.user.registerUser.useMutation({
     onSuccess: () => {
       // Handle successful registration, e.g., redirect to login or dashboard
       console.log("User registered successfully!");
-      // router.push('/login'); // Example redirect using Next.js router if available
+      router.push('/'); // Added redirect to home page
     },
     onError: (error) => {
       // Error is already handled by the error object from useMutation
@@ -70,8 +72,8 @@ const Signup1 = ({
                   <Image
                     src={logo.src}
                     alt={logo.alt}
-                    title={logo.title}
-                    className="h-10"
+                    width={160} // Added width
+                    height={40}  // Added height
                   />
                 </a>
               </div>
