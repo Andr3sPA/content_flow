@@ -1,7 +1,10 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
-
+import CredentialsProvider from "next-auth/providers/credentials"
 import { db } from "@/server/db";
+import { appRouter,createCaller } from "../api/root";
+import { createTRPCContext } from "../api/trpc";
+import { type NextApiRequest, type NextApiResponse } from "next";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -31,6 +34,49 @@ declare module "next-auth" {
  */
 export const authConfig = {
   providers: [
+      CredentialsProvider({
+    // The name to display on the sign in form (e.g. 'Sign in with...')
+    name: 'Credentials',
+    // The credentials is used to generate a suitable form on the sign in page.
+    // You can specify whatever fields you are expecting to be submitted.
+    // e.g. domain, username, password, 2FA token, etc.
+    // You can pass any HTML attribute to the <input> tag through the object.
+    credentials: {
+      email: { label: "Email", type: "text", placeholder: "jsmith" },
+      password: { label: "Password", type: "password" }
+    },
+    async authorize(credentials, req) {
+      // You need to provide your own logic here that takes the credentials
+      // submitted and returns either a object representing a user or value
+      // that is false/null if the credentials are invalid.
+      // e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
+      // You can also use the `req` object to obtain additional parameters
+      // (i.e., the request IP address)
+      const ctx = await createTRPCContext({req});
+      const caller = createCaller(ctx);
+
+      if (
+        !credentials ||
+        typeof credentials.email !== "string" ||
+        typeof credentials.password !== "string"
+      ) {
+        return null;
+      }
+
+      const res = await caller.user.authenticateUser({
+        email: credentials.email,
+        password: credentials.password,
+      });
+      const user = await res.json()
+
+      // If no error and we have user data, return it
+      if (res.ok && user) {
+        return user
+      }
+      // Return null if user data could not be retrieved
+      return null
+    }
+  })
     /**
      * ...add more providers here.
      *
@@ -42,12 +88,15 @@ export const authConfig = {
      */
   ],
   adapter: PrismaAdapter(db),
+  session: {
+     strategy: "jwt",
+   },
   callbacks: {
-    session: ({ session, user }) => ({
+    session: ({ session, token }) => ({
       ...session,
       user: {
         ...session.user,
-        id: user.id,
+        id: token.sub,
       },
     }),
   },
