@@ -2,10 +2,9 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import {
   createTRPCRouter,
-  protectedProcedure,
   publicProcedure,
 } from "@/server/api/trpc";
-import { ok,badReq } from "@/app/api/utils/responses";
+import { TRPCError } from "@trpc/server";
 
 export const userRouter = createTRPCRouter(
     {
@@ -14,18 +13,29 @@ export const userRouter = createTRPCRouter(
         email: z.string().email(),
         password: z.string()
     }))
-    .query(async ({ ctx,input }) => {   
-    const user = await ctx.db.user.findUniqueOrThrow({
-      where: { email: input.email  },
-    });
-    const isPasswordValid = await bcrypt.compare(input.password, user.password);
-    if (!isPasswordValid) return badReq("Email o contraseña incorrectos");
-    return ok({
-        user: {
-          id: user.id,
-          email: user.email,
-        },
+    .query(async ({ ctx,input }) => {
+    let userFromDb;
+    try {
+      userFromDb = await ctx.db.user.findUniqueOrThrow({
+        where: { email: input.email  },
       });
+    } catch (error) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'User not found.',
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(input.password, userFromDb.password);
+    if (!isPasswordValid) {
+      return null; // Incorrect password
+    }
+
+    return {
+        id: userFromDb.id,
+        email: userFromDb.email,
+        name: userFromDb.name,
+      };
   }),
     registerUser: publicProcedure
         .input(z.object({   

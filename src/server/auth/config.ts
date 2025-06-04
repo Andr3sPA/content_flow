@@ -2,9 +2,8 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials"
 import { db } from "@/server/db";
-import { appRouter,createCaller } from "../api/root";
+import { createCaller } from "../api/root";
 import { createTRPCContext } from "../api/trpc";
-import { type NextApiRequest, type NextApiResponse } from "next";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -52,7 +51,7 @@ export const authConfig = {
       // e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
       // You can also use the `req` object to obtain additional parameters
       // (i.e., the request IP address)
-      const ctx = await createTRPCContext({req});
+      const ctx = await createTRPCContext({ headers: req?.headers});
       const caller = createCaller(ctx);
 
       if (
@@ -63,18 +62,23 @@ export const authConfig = {
         return null;
       }
 
-      const res = await caller.user.authenticateUser({
-        email: credentials.email,
-        password: credentials.password,
-      });
-      const user = await res.json()
+      try {
+        const user = await caller.user.authenticateUser({
+          email: credentials.email,
+          password: credentials.password,
+        });
 
-      // If no error and we have user data, return it
-      if (res.ok && user) {
-        return user
+        // If no error and we have user data, return it
+        if (user) {
+          return user;
+        }
+        // Return null if user data could not be retrieved or password was incorrect
+        return null;
+      } catch (error) {
+        // Handle errors from authenticateUser, e.g., user not found
+        console.error("Authentication error:", error);
+        return null;
       }
-      // Return null if user data could not be retrieved
-      return null
     }
   })
     /**

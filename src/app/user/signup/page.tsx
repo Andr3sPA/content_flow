@@ -1,6 +1,5 @@
 import { Signup1 } from "@/components/signup1";
-import { CardContent, CardDescription,Card,CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { CardContent, Card } from "@/components/ui/card";
 
 export default function SignUpPage() {
   return (

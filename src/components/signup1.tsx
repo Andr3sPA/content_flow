@@ -2,7 +2,7 @@
 
 import { FcGoogle } from "react-icons/fc";
 import { useState } from "react";
-
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
@@ -67,7 +67,7 @@ const Signup1 = ({
             {logo && (
               <div className="flex items-center gap-1 lg:justify-start">
                 <a href={logo.url}>
-                  <img
+                  <Image
                     src={logo.src}
                     alt={logo.alt}
                     title={logo.title}
