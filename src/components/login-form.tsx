@@ -56,7 +56,18 @@ export function LoginForm({
         setResponse({ status: "ok", info: "Inicio de sesión exitoso!" })
         // router.push('/'); // Optional: redirect on success if useRouter is imported and configured
       }
-    })
+    }).catch((error) => {
+      // Handle unexpected errors during the signIn process itself
+      console.error("SignIn call failed:", error);
+      const genericMessage = "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.";
+      setResponse({
+        status: "error",
+        info: genericMessage,
+      });
+      toast("Error", {
+        description: genericMessage,
+      });
+    });
   }
 
   return (
